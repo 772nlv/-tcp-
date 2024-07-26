@@ -1,0 +1,128 @@
+     strcpy(com->data, "quit");
+        buf.type = EXIT_QUNL;
+        FD_CLR(sd, set);
+    }
+    memcpy(buf.data, com, sizeof(comu));
+    for (int j = 4; j < maxFD + 1; j++)
+    {
+        int val = FD_ISSET(j, set);
+        if (j != sd && val == 1)
+        {
+            int ret = write(j, &buf, sizeof(Boat));
+        }
+    }
+}
+//客户端群聊子线程工作函数  客户机
+void *cli_qunliao_work(void *p)
+{
+    int sd = *(int *)p;
+    while (1)
+    {
+        Boat chuan;
+        int ret = read(sd, &chuan, sizeof(chuan));
+        if (ret > 0)
+        {
+            if (chuan.type == QUNLIAO)
+            {
+                comu *c = (comu *)chuan.data;
+                printf("%s：%s\n", c->name, c->data);
+                printf("%s\n", Gettime());
+            }
+            if (chuan.type == EXIT_QUNL)
+            {
+                comu *c = (comu *)chuan.data;
+                printf("%s 退出群聊\n", c->name);
+                printf("%s\n", Gettime());
+            }
+            else if (chuan.type == EXIT_SER)
+            {
+                printf("%s\n", chuan.data);
+            }
+        }
+        if (ret <= 0)
+        {
+            printf("服务器异常，程序退出\n");
+            exit(0);
+        }
+    }
+}
+
+//好友功能选项页面
+void ShowFriendsfunc()
+{
+    // system("clear");
+    printf("                              \n");
+    printf("          好友功能列表         \n");
+    printf("******************************\n");
+    printf("*          a.好友列表         *\n");
+    printf("*          b.添加好友         *\n");
+    printf("*          c.私聊好友         *\n");
+    printf("*          d.新朋友(%d)       *\n", RequesIndex);
+    printf("*          e.退出             *\n");
+    printf("*******************************\n");
+    printf("* 请输入你的选择序号>>>>>   \n");
+    return;
+}
+
+//好友功能 客户机
+int Friends_func(int sd, struct sockaddr_in addr)
+{
+    Query_Server(sd);
+    ShowFriendsfunc(); //展示好友功能页面
+    char choose[10];
+    scanf("%s", choose);
+    switch (*choose)
+    {
+    case 'a':
+    {
+        //查看好友列表
+        printf("好友列表\n");
+        Friend_List_show(sd);
+        AnyQuit();
+        break;
+    }
+
+    case 'b':
+    {
+        //添加好友
+        Friend_Add(addr, sd);
+        break;
+    }
+
+    case 'c':
+        //私聊好友
+        Pri_chat(sd);
+        break;
+
+    case 'd':
+        //私聊好友
+        Handle_Addfriends(sd);
+        break;
+    case 'e':
+        //退出（返回上一级）
+        ChooseFunction(sd, addr);
+        break;
+    }
+    Friends_func(sd, addr);
+}
+//私聊
+void Pri_chat(int sd)
+{
+    Boat temp_Enter;
+    temp_Enter.type = ENTRE_PRICHAT;
+    write(sd, &temp_Enter, sizeof(Boat));
+    int ret1 = sem_init(&sem1, 0, 1);
+    int ret2 = sem_init(&sem2, 0, 0);
+    printf("quit即可退出\n好友列表\n");
+    Friend_List_show(sd);
+    pthread_t ptid;
+    pthread_create(&ptid, NULL, Pri_work, &sd);
+    Boat buf;
+    Pri_chat_st pri_st;
+    printf("请输入你要私聊的对象：\n");
+    scanf("%s", pri_st.Destname);
+
+    while (1)
+    {
+
+        scanf("%s", pri_st.data);
